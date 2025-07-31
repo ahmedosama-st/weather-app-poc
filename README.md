@@ -13,7 +13,7 @@ A NestJS application for retrieving and storing weather data based on geographic
 ### 1. Clone the repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/ahmedosama-st/weather-app-poc
 cd weather-app-poc
 ```
 
