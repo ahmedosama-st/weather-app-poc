@@ -67,7 +67,6 @@ export class WeatherService {
     return (await firstValueFrom(this.http.get(url))) as unknown as { data: NearestCityResponse };
   }
 
-
   private async createPollutionRecord(pollutionData: Pollution, locationId: number) {
     const cleanedPollutionData = this.excludeTimestampFromData(pollutionData);
 

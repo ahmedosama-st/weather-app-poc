@@ -13,11 +13,6 @@ export class LocationService {
     private readonly locationRepository: Repository<LocationEntity>,
   ) {}
 
-  /**
-   * Creates a location hierarchy (country, city, state) based on data from the API
-   * @param data The data containing country, city, and state information
-   * @returns An object containing the created country, city, and state entities
-   */
   async createLocationHierarchy(data: Data) {
     const country = await findOrCreate(this.locationRepository, {
       name: data.country,
@@ -37,17 +32,5 @@ export class LocationService {
     });
 
     return { country, city, state };
-  }
-
-  /**
-   * Finds a location by its name and type
-   * @param name The name of the location
-   * @param type The type of the location
-   * @returns The found location entity or null if not found
-   */
-  async findLocationByNameAndType(name: string, type: LocationEnum) {
-    return this.locationRepository.findOne({
-      where: { name, type }
-    });
   }
 }
