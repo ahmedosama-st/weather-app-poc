@@ -4,16 +4,16 @@ import { CacheService } from '@common/services/cache.service';
 import { env } from '@common/env';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { Data, NearestCityResponse, Pollution, Weather } from '../types/responses/airvisual';
+import { NearestCityResponse, Pollution, Weather } from '../types/responses/airvisual';
 import { InjectRepository } from '@nestjs/typeorm';
 import { WeatherEntity } from '@src/weather/entities/weather.entity';
 import { PollutionEntity } from '@src/weather/entities/pollution.entity';
 import { Url } from '@common/utils/url';
 import { LocationEnum } from '@src/location/enums/location.enum';
 import { findOrCreate } from '@common/utils/database';
-import { LocationEntity } from '@src/location/entities/location.entity';
 import { Repository } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { LocationService } from '@src/location/services/location.service';
 
 @Injectable()
 export class WeatherService {
@@ -22,10 +22,9 @@ export class WeatherService {
     private readonly http: HttpService,
     @InjectRepository(WeatherEntity)
     private readonly weatherRepository: Repository<WeatherEntity>,
-    @InjectRepository(LocationEntity)
-    private readonly locationRepository: Repository<LocationEntity>,
     @InjectRepository(PollutionEntity)
     private readonly pollutionRepository: Repository<PollutionEntity>,
+    private readonly locationService: LocationService,
   ) {}
 
   @Cron(CronExpression.EVERY_MINUTE)
@@ -45,7 +44,7 @@ export class WeatherService {
   async getWeatherStatusByCoordinates(query: GetWeatherPeakByCoordinatesQuery) {
     try {
       const apiResponse = await this.fetchNearestCityData(query);
-      const locationHierarchy = await this.createLocationHierarchy(apiResponse.data.data);
+      const locationHierarchy = await this.locationService.createLocationHierarchy(apiResponse.data.data);
       const pollution = await this.createPollutionRecord(
         apiResponse.data.data.current.pollution,
         locationHierarchy.state.id,
@@ -68,26 +67,6 @@ export class WeatherService {
     return (await firstValueFrom(this.http.get(url))) as unknown as { data: NearestCityResponse };
   }
 
-  private async createLocationHierarchy(data: Data) {
-    const country = await findOrCreate(this.locationRepository, {
-      name: data.country,
-      type: LocationEnum.Country,
-    });
-
-    const city = await findOrCreate(this.locationRepository, {
-      name: data.city,
-      type: LocationEnum.City,
-      parentId: country.id,
-    });
-
-    const state = await findOrCreate(this.locationRepository, {
-      name: data.state,
-      type: LocationEnum.State,
-      parentId: city.id,
-    });
-
-    return { country, city, state };
-  }
 
   private async createPollutionRecord(pollutionData: Pollution, locationId: number) {
     const cleanedPollutionData = this.excludeTimestampFromData(pollutionData);
